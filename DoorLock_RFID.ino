@@ -96,21 +96,6 @@ void initRFID() {
   mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_max);
 }
 
-void copyBytes( byte* src, byte* dst ) {
-  for ( uint8_t k = 0; k < 4; k++ ) {   // Loop 4 times
-    dst[k] = src[k];
-  }
-}
-///////////////////////////////////////// Check Bytes   ///////////////////////////////////
-bool checkTwo ( byte a[], byte b[] ) {   
-  for ( uint8_t k = 0; k < 4; k++ ) {   // Loop 4 times
-    if ( a[k] != b[k] ) {     // IF a != b then false, because: one fails, all fail
-       return false;
-    }
-  }
-  return true;  
-}
-
 bool tryReadRFID() {
   // Getting ready for Reading PICCs
   if ( ! mfrc522.PICC_IsNewCardPresent()) { //If a new PICC placed to RFID reader continue
