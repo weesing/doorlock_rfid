@@ -3,8 +3,6 @@
 
 #define PIN_RFID_RST 9
 #define PIN_RFID_SDA 10
-#define PIN_BLE_RXD 3
-#define PIN_BLE_TXD 4
 
 #define RFID_MS 250
 unsigned long rfidLastTime = 0;
@@ -190,18 +188,42 @@ void buzzerLoop()
   }
 }
 
-void initRFID()
-{
-  SPI.begin();        // Init SPI bus
-  mfrc522.PCD_Init(); // Init MFRC522 card
-  mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_max);
+void showReaderDetails() {
+  // Get the MFRC522 software version
+  byte v = mfrc522.PCD_ReadRegister(mfrc522.VersionReg);
+  Serial.print(F("<mfrc_ver>"));
+  Serial.print(v, HEX);
+  Serial.println("");
+  // When 0x00 or 0xFF is returned, communication probably failed
+  if ((v == 0x00) || (v == 0xFF)) {
+    Serial.println(F("<mfrc_failed>"));
+    unauthSound();
+  }
 }
 
+void initRFID()
+{
+  Serial.println("<mfrc_init>");
+  SPI.begin();     // Init SPI bus
+  delay(100);
+  mfrc522.PCD_Init(); // Init MFRC522 card
+  delay(100);
+  mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_max);
+  delay(100);
+  showReaderDetails();
+}
+
+int noCardCount = 0;
 bool tryReadRFID()
 {
   // Getting ready for Reading PICCs
   if (!mfrc522.PICC_IsNewCardPresent())
   { //If a new PICC placed to RFID reader continue
+    noCardCount++;
+    if (noCardCount >= 100) {
+      Serial.println("No card 100");
+      noCardCount = 0;
+    }
     return false;
   }
   if (!mfrc522.PICC_ReadCardSerial())
@@ -229,7 +251,6 @@ void rfidLoop()
   if (tryReadRFID())
   {
     sendBLEData(readCard);
-
     scanSound();
   }
 }
@@ -281,13 +302,16 @@ void bleLoop()
         Serial.println("RECV_UNAUTH");
         unauthSound();
       }
+      else if (command.equals("init"))
+      {
+        showReaderDetails();
+      }
     }
   }
 }
 
 void initBLE()
 {
-  delay(1000);
 }
 
 void setup()
@@ -300,6 +324,8 @@ void setup()
   Serial.println("SER_READY");
 
   pinMode(PIN_BUZZER, OUTPUT);
+
+  delay(3000);
 
   initRFID();
   initBLE();
