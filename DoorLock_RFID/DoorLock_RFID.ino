@@ -213,17 +213,11 @@ void initRFID()
   showReaderDetails();
 }
 
-int noCardCount = 0;
 bool tryReadRFID()
 {
   // Getting ready for Reading PICCs
   if (!mfrc522.PICC_IsNewCardPresent())
   { //If a new PICC placed to RFID reader continue
-    noCardCount++;
-    if (noCardCount >= 100) {
-      Serial.println("No card 100");
-      noCardCount = 0;
-    }
     return false;
   }
   if (!mfrc522.PICC_ReadCardSerial())
@@ -247,6 +241,7 @@ void rfidLoop()
   {
     return;
   }
+  rfidLastTime = currTime;
 
   if (tryReadRFID())
   {
@@ -328,14 +323,16 @@ void setup()
   delay(3000);
 
   initRFID();
-  initBLE();
-
   delay(1000);
+  initBLE();
+  delay(1000);
+  
   Serial.println(F("<req_rfid_data>"));
 
   tone(PIN_BUZZER, INIT_SOUND, 100);
   delay(200);
   tone(PIN_BUZZER, INIT_SOUND, 100);
+  delay(10000);
 }
 
 void loop()
