@@ -247,6 +247,7 @@ void rfidLoop()
   {
     return;
   }
+  rfidLastTime = currTime;
 
   if (tryReadRFID())
   {
@@ -328,14 +329,16 @@ void setup()
   delay(3000);
 
   initRFID();
-  initBLE();
-
   delay(1000);
+  initBLE();
+  delay(1000);
+  
   Serial.println(F("<req_rfid_data>"));
 
   tone(PIN_BUZZER, INIT_SOUND, 100);
   delay(200);
   tone(PIN_BUZZER, INIT_SOUND, 100);
+  delay(10000);
 }
 
 void loop()
