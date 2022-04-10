@@ -4,7 +4,7 @@
 #define PIN_RFID_RST 9
 #define PIN_RFID_SDA 10
 
-#define RFID_MS 250
+#define RFID_MS 0
 unsigned long rfidLastTime = 0;
 
 MFRC522 mfrc522(PIN_RFID_SDA, PIN_RFID_RST); // Create MFRC522 instance.
@@ -144,14 +144,17 @@ void authSound()
   }
 }
 
-void unauthSound() {
+void unauthSound()
+{
   tone(PIN_BUZZER, 100, 100);
   delay(200);
   tone(PIN_BUZZER, 100, 500);
 }
 
-void scanSound() {
-
+void scannedSound()
+{
+  tone(PIN_BUZZER, INIT_SOUND + 500, 100);
+  delay(100);
 }
 
 void buzzerLoop()
@@ -188,14 +191,16 @@ void buzzerLoop()
   }
 }
 
-void showReaderDetails() {
+void showReaderDetails()
+{
   // Get the MFRC522 software version
   byte v = mfrc522.PCD_ReadRegister(mfrc522.VersionReg);
   Serial.print(F("<mfrc_ver>"));
   Serial.print(v, HEX);
   Serial.println("");
   // When 0x00 or 0xFF is returned, communication probably failed
-  if ((v == 0x00) || (v == 0xFF)) {
+  if ((v == 0x00) || (v == 0xFF))
+  {
     Serial.println(F("<mfrc_failed>"));
     unauthSound();
   }
@@ -204,7 +209,7 @@ void showReaderDetails() {
 void initRFID()
 {
   Serial.println("<mfrc_init>");
-  SPI.begin();     // Init SPI bus
+  SPI.begin(); // Init SPI bus
   delay(100);
   mfrc522.PCD_Init(); // Init MFRC522 card
   delay(100);
@@ -217,11 +222,13 @@ bool tryReadRFID()
 {
   // Getting ready for Reading PICCs
   if (!mfrc522.PICC_IsNewCardPresent())
-  { //If a new PICC placed to RFID reader continue
+  { // If a new PICC placed to RFID reader continue
     return false;
   }
+  tone(PIN_BUZZER, INIT_SOUND - 500, 100);
   if (!mfrc522.PICC_ReadCardSerial())
-  { //Since a PICC placed get Serial and continue
+  { // Since a PICC placed get Serial and continue
+    Serial.println("NOREAD");
     return false;
   }
   // There are Mifare PICCs which have 4 byte or 7 byte UID care if you use 7 byte PICC
@@ -232,6 +239,8 @@ bool tryReadRFID()
     readCard[i] = mfrc522.uid.uidByte[i];
   }
   mfrc522.PICC_HaltA(); // Stop reading
+  mfrc522.PCD_StopCrypto1();
+  scannedSound();
   return true;
 }
 
@@ -246,7 +255,6 @@ void rfidLoop()
   if (tryReadRFID())
   {
     sendBLEData(readCard);
-    scanSound();
   }
 }
 
@@ -261,7 +269,7 @@ void sendBLEData(const byte *data)
   delay(100);
 }
 
-void (*rebootFunc)(void) = 0; //reboot function @ address 0
+void (*rebootFunc)(void) = 0; // reboot function @ address 0
 
 void bleLoop()
 {
@@ -326,13 +334,20 @@ void setup()
   delay(1000);
   initBLE();
   delay(1000);
-  
+
   Serial.println(F("<req_rfid_data>"));
 
-  tone(PIN_BUZZER, INIT_SOUND, 100);
-  delay(200);
-  tone(PIN_BUZZER, INIT_SOUND, 100);
-  delay(10000);
+  int waitCount = 10;
+  while (waitCount > 0)
+  {
+    tone(PIN_BUZZER, INIT_SOUND + (waitCount * 100), 100);
+    Serial.println(waitCount);
+    --waitCount;
+    delay(1000);
+  }
+
+  Serial.println(F("START READ"));
+  tone(PIN_BUZZER, INIT_SOUND, 500);
 }
 
 void loop()
